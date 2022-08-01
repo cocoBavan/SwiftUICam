@@ -22,7 +22,7 @@ public protocol CameraViewControllerDelegate {
     
     func didStartVideoRecording()
     func didFinishVideoRecording()
-    func didSaveVideoRecording(_ file: PHAsset)
+    func didSaveVideoRecording(_ asset: PHAsset)
     
     //    func didSavePhoto()
     func didFinishProcessingPhoto(_ image: UIImage)

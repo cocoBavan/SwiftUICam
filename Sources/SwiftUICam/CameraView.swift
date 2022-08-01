@@ -26,8 +26,10 @@ public struct CameraView: UIViewControllerRepresentable {
     private var pinchToZoom: Bool
     private var tapToFocus: Bool
     private var doubleTapCameraSwitch: Bool
+
+    private onVideoSaved: (PHAsset)->Void
     
-    public init(events: UserEvents, applicationName: String, preferredStartingCameraType: AVCaptureDevice.DeviceType = .builtInWideAngleCamera, preferredStartingCameraPosition: AVCaptureDevice.Position = .back, focusImage: String? = nil, pinchToZoom: Bool = true, tapToFocus: Bool = true, doubleTapCameraSwitch: Bool = true) {
+    public init(events: UserEvents, applicationName: String, preferredStartingCameraType: AVCaptureDevice.DeviceType = .builtInWideAngleCamera, preferredStartingCameraPosition: AVCaptureDevice.Position = .back, focusImage: String? = nil, pinchToZoom: Bool = true, tapToFocus: Bool = true, doubleTapCameraSwitch: Bool = true, onVideoSaved:(PHAsset)->Void ) {
         self.events = events
         
         self.applicationName = applicationName
@@ -39,6 +41,8 @@ public struct CameraView: UIViewControllerRepresentable {
         self.pinchToZoom = pinchToZoom
         self.tapToFocus = tapToFocus
         self.doubleTapCameraSwitch = doubleTapCameraSwitch
+
+        self.onVideoSaved = onVideoSaved
     }
     
     public func makeUIViewController(context: Context) -> CameraViewController {
@@ -135,8 +139,9 @@ public struct CameraView: UIViewControllerRepresentable {
                 print("Video recording finished")
             }
         
-        public func didSaveVideoRecording(_ file: PHAsset){
-            print("Video saving finished \(file)")
+        public func didSaveVideoRecording(_ asset: PHAsset){
+            print("Video saving finished")
+            onVideoSaved(asset)
         }
             
         public func didSavePhoto() {
