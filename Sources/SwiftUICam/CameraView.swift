@@ -29,7 +29,7 @@ public struct CameraView: UIViewControllerRepresentable {
 
     private var onVideoSaved: (PHAsset)->Void
     
-    public init(events: UserEvents, applicationName: String, preferredStartingCameraType: AVCaptureDevice.DeviceType = .builtInWideAngleCamera, preferredStartingCameraPosition: AVCaptureDevice.Position = .back, focusImage: String? = nil, pinchToZoom: Bool = true, tapToFocus: Bool = true, doubleTapCameraSwitch: Bool = true, @escaping onVideoSaved:(PHAsset)->Void ) {
+    public init(events: UserEvents, applicationName: String, preferredStartingCameraType: AVCaptureDevice.DeviceType = .builtInWideAngleCamera, preferredStartingCameraPosition: AVCaptureDevice.Position = .back, focusImage: String? = nil, pinchToZoom: Bool = true, tapToFocus: Bool = true, doubleTapCameraSwitch: Bool = true, onVideoSaved: @escaping (PHAsset)->Void ) {
         self.events = events
         
         self.applicationName = applicationName
