@@ -8,6 +8,7 @@
 
 import SwiftUI
 import AVFoundation
+import Photos
 
 // MARK: CameraView
 public struct CameraView: UIViewControllerRepresentable {
@@ -134,7 +135,7 @@ public struct CameraView: UIViewControllerRepresentable {
                 print("Video recording finished")
             }
         
-        public func didSaveVideoRecording(_ file: String){
+        public func didSaveVideoRecording(_ file: PHAsset){
             print("Video saving finished \(file)")
         }
             

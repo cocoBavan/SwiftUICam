@@ -688,7 +688,7 @@ extension CameraViewController: AVCaptureFileOutputRecordingDelegate {
                         } else {
                             if let ph = placeholder,  let asset = PHAsset.fetchAssets(withLocalIdentifiers: [ph.localIdentifier], options: .none).firstObject {
                                 DispatchQueue.main.async { [weak self] in
-                                    self?.delegate.didSaveVideoRecording(asset)
+                                    self?.delegate?.didSaveVideoRecording(asset)
                                 }
                             }
                         }
