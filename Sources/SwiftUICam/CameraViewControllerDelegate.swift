@@ -6,6 +6,7 @@
 //  Copyright © 2020 Pierre Véron. All rights reserved.
 //
 import UIKit
+import Photos
 
 public protocol CameraViewControllerDelegate {
 //    func cameraAccessGranted()
@@ -21,6 +22,7 @@ public protocol CameraViewControllerDelegate {
     
     func didStartVideoRecording()
     func didFinishVideoRecording()
+    func didSaveVideoRecording(_ file: PHAsset)
     
     //    func didSavePhoto()
     func didFinishProcessingPhoto(_ image: UIImage)

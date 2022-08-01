@@ -133,6 +133,10 @@ public struct CameraView: UIViewControllerRepresentable {
                 parent.events.didAskToStopRecording = false
                 print("Video recording finished")
             }
+        
+        public func didSaveVideoRecording(_ file: String){
+            print("Video saving finished \(file)")
+        }
             
         public func didSavePhoto() {
                 print("Save photo to library")

@@ -675,14 +675,22 @@ extension CameraViewController: AVCaptureFileOutputRecordingDelegate {
             PHPhotoLibrary.requestAuthorization { status in
                 if status == .authorized {
                     // Save the movie file to the photo library and cleanup.
+                    var placeholder: PHObjectPlaceholder?
                     PHPhotoLibrary.shared().performChanges({
                         let options = PHAssetResourceCreationOptions()
                         options.shouldMoveFile = true
                         let creationRequest = PHAssetCreationRequest.forAsset()
                         creationRequest.addResource(with: .video, fileURL: outputFileURL, options: options)
+                        placeholder = creationRequest.placeholderForCreatedAsset
                     }, completionHandler: { success, error in
                         if !success {
                             print("\(self.applicationName!) couldn't save the movie to your photo library: \(String(describing: error))")
+                        } else {
+                            if let ph = placeholder,  let asset = PHAsset.fetchAssets(withLocalIdentifiers: [ph.localIdentifier], options: .none).firstObject {
+                                DispatchQueue.main.async { [weak self] in
+                                    self?.delegate.didSaveVideoRecording(asset)
+                                }
+                            }
                         }
                         cleanup()
                     }
