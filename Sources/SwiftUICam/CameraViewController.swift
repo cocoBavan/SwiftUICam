@@ -640,13 +640,13 @@ extension CameraViewController: AVCaptureFileOutputRecordingDelegate {
     /// - Tag: DidFinishRecording
     public func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: Error?) {
         // Note: Because we use a unique file path for each recording, a new recording won't overwrite a recording mid-save.
-        func cleanup() {
-            let path = outputFileURL.path
+        func cleanup(_ url: URL? = nil) {
+            let path = url?.path ?? outputFileURL.path
             if FileManager.default.fileExists(atPath: path) {
                 do {
                     try FileManager.default.removeItem(atPath: path)
                 } catch {
-                    print("Could not remove file at url: \(outputFileURL)")
+                    print("Could not remove file at url: \(path)")
                 }
             }
             
@@ -671,36 +671,100 @@ extension CameraViewController: AVCaptureFileOutputRecordingDelegate {
         }
         
         if success {
+
             // Check the authorization status.
             PHPhotoLibrary.requestAuthorization { status in
                 if status == .authorized {
                     // Save the movie file to the photo library and cleanup.
-                    var placeholder: PHObjectPlaceholder?
-                    PHPhotoLibrary.shared().performChanges({
-                        let options = PHAssetResourceCreationOptions()
-                        options.shouldMoveFile = true
-                        let creationRequest = PHAssetCreationRequest.forAsset()
-                        creationRequest.addResource(with: .video, fileURL: outputFileURL, options: options)
-                        placeholder = creationRequest.placeholderForCreatedAsset
-                    }, completionHandler: { success, error in
-                        if !success {
-                            print("\(self.applicationName!) couldn't save the movie to your photo library: \(String(describing: error))")
-                        } else {
-                            if let ph = placeholder,  let asset = PHAsset.fetchAssets(withLocalIdentifiers: [ph.localIdentifier], options: .none).firstObject {
-                                DispatchQueue.main.async { [weak self] in
-                                    self?.delegate?.didSaveVideoRecording(asset)
-                                }
-                            }
+                    suqareCropVideo(inputURL: outputFileURL, completion: { (squareURL) -> () in
+                        guard let outputURL = squareURL else {
+                            print("Could not square the video")
+                            cleanup()
+                            return
                         }
-                        cleanup()
-                    }
-                    )
+
+                        var placeholder: PHObjectPlaceholder?
+                        PHPhotoLibrary.shared().performChanges({
+                                let options = PHAssetResourceCreationOptions()
+                                options.shouldMoveFile = true
+                                let creationRequest = PHAssetCreationRequest.forAsset()
+                                creationRequest.addResource(with: .video, fileURL: outputURL, options: options)
+                                placeholder = creationRequest.placeholderForCreatedAsset
+                            }, completionHandler: { success, error in
+                                if !success {
+                                    print("\(self.applicationName!) couldn't save the movie to your photo library: \(String(describing: error))")
+                                } else {
+                                    if let ph = placeholder,  let asset = PHAsset.fetchAssets(withLocalIdentifiers: [ph.localIdentifier], options: .none).firstObject {
+                                    DispatchQueue.main.async { [weak self] in
+                                        self?.delegate?.didSaveVideoRecording(asset)
+                                    }
+                                }
+                                cleanup(outputURL)
+                                cleanup()
+                            }
+                        })
+                    })
                 } else {
                     cleanup()
                 }
             }
         } else {
             cleanup()
+        }
+    }
+
+    func suqareCropVideo(inputURL: URL, completion: @escaping (_ outputURL : URL?) -> ()) {
+        let videoAsset: AVAsset = AVAsset( url: inputURL )
+        guard let clipVideoTrack = videoAsset.tracks( withMediaType: AVMediaTypeVideo ).first as? AVAssetTrack else { 
+            completion(nil) 
+            return 
+        }
+
+        let composition = AVMutableComposition()
+        composition.addMutableTrack(withMediaType: AVMediaTypeVideo, preferredTrackID: CMPersistentTrackID())
+
+        let videoComposition = AVMutableVideoComposition()
+        let size = min(clipVideoTrack.naturalSize.height, clipVideoTrack.naturalSize.width)
+        videoComposition.renderSize = CGSize( width: size, height: size )
+        videoComposition.frameDuration = CMTimeMake(1, 30)
+
+        let transformer = AVMutableVideoCompositionLayerInstruction(assetTrack: clipVideoTrack)
+
+        let instruction = AVMutableVideoCompositionInstruction()
+        instruction.timeRange = CMTimeRangeMake(kCMTimeZero, CMTimeMakeWithSeconds(60, 30))
+
+        let transform1: CGAffineTransform = CGAffineTransform(translationX: clipVideoTrack.naturalSize.height, y: (clipVideoTrack.naturalSize.width - clipVideoTrack.naturalSize.height) / 2)
+        let transform2 = transform1.rotated(by: .pi/2)
+        let finalTransform = transform2
+
+
+        transformer.setTransform(finalTransform, at: kCMTimeZero)
+
+        instruction.layerInstructions = [transformer]
+        videoComposition.instructions = [instruction]
+
+        // Export
+        let exportSession = AVAssetExportSession(asset: videoAsset, presetName: AVAssetExportPresetHighestQuality)!
+        //print ("random id = \(NSUUID().uuidString)")
+
+        let croppedOutputFileUrl = URL( fileURLWithPath: getOutputPath( NSUUID().uuidString) ) // CREATE RANDOM FILE NAME HERE
+        exportSession.outputURL = croppedOutputFileUrl
+        exportSession.outputFileType = AVFileTypeQuickTimeMovie
+        exportSession.videoComposition = videoComposition
+
+        exportSession.exportAsynchronously() { handler -> Void in
+            if exportSession.status == .completed {
+                print("Export complete")
+                DispatchQueue.main.async(execute: {
+                    completion(croppedOutputFileUrl)
+                })
+                return
+            } else if exportSession.status == .failed {
+                print("Export failed - \(String(describing: exportSession.error))")
+            }
+
+            completion(nil)
+            return
         }
     }
 }
